@@ -23,3 +23,6 @@ hs_err_pid*
 
 # Claude local session settings
 .claude/
+
+# Local personal guide (not part of the public library)
+GUIDE.tr.md
