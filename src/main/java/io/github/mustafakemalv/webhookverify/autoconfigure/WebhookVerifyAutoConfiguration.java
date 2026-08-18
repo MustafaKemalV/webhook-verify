@@ -6,6 +6,8 @@ import io.github.mustafakemalv.webhookverify.provider.GitHubVerifier;
 import io.github.mustafakemalv.webhookverify.provider.PaddleVerifier;
 import io.github.mustafakemalv.webhookverify.provider.StripeVerifier;
 import io.github.mustafakemalv.webhookverify.web.CachedBodyFilter;
+import io.github.mustafakemalv.webhookverify.web.DefaultWebhookVerificationFailureHandler;
+import io.github.mustafakemalv.webhookverify.web.WebhookVerificationFailureHandler;
 import io.github.mustafakemalv.webhookverify.web.WebhookVerificationInterceptor;
 import java.time.Clock;
 import java.util.LinkedHashMap;
@@ -36,9 +38,16 @@ public class WebhookVerifyAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    WebhookVerificationFailureHandler webhookVerificationFailureHandler() {
+        return new DefaultWebhookVerificationFailureHandler();
+    }
+
+    @Bean
     WebhookVerificationInterceptor webhookVerificationInterceptor(
-            WebhookVerifyProperties properties, Clock clock) {
-        return new WebhookVerificationInterceptor(buildVerifiers(properties), properties, clock);
+            WebhookVerifyProperties properties, Clock clock,
+            WebhookVerificationFailureHandler failureHandler) {
+        return new WebhookVerificationInterceptor(buildVerifiers(properties), properties, clock, failureHandler);
     }
 
     @Bean

@@ -2,10 +2,13 @@ package io.github.mustafakemalv.webhookverify;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.github.mustafakemalv.webhookverify.core.Hmac;
 import io.github.mustafakemalv.webhookverify.web.VerifiedWebhook;
+import io.github.mustafakemalv.webhookverify.web.WebhookVerificationFailureHandler;
+import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -110,6 +113,15 @@ class WebhookVerificationIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void custom_failure_handler_adds_error_header() throws Exception {
+        mockMvc.perform(post("/webhooks/github")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}".getBytes(StandardCharsets.UTF_8)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Webhook-Error", "github:MISSING_SIGNATURE"));
+    }
+
     // --- Stripe ---
 
     @Test
@@ -197,6 +209,14 @@ class WebhookVerificationIntegrationTest {
         @Bean
         Clock fixedClock() {
             return Clock.fixed(Instant.ofEpochSecond(NOW_EPOCH), ZoneOffset.UTC);
+        }
+
+        @Bean
+        WebhookVerificationFailureHandler failureHandler() {
+            return (req, res, provider, reason) -> {
+                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                res.setHeader("X-Webhook-Error", provider + ":" + reason);
+            };
         }
 
         @RestController

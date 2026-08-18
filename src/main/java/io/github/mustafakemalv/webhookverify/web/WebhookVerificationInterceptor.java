@@ -15,20 +15,24 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Enforces {@link VerifiedWebhook} on controller handlers: reads the annotation, looks up the
- * matching verifier and secret, verifies the raw (cached) body, and short-circuits with 401 when
- * the signature is missing or invalid so the handler never runs.
+ * matching verifier and secret, verifies the raw (cached) body, and on a missing or invalid
+ * signature delegates to a {@link WebhookVerificationFailureHandler} (401 by default) so the
+ * handler never runs.
  */
 public class WebhookVerificationInterceptor implements HandlerInterceptor {
 
     private final Map<String, WebhookVerifier> verifiersByProvider;
     private final WebhookVerifyProperties properties;
     private final Clock clock;
+    private final WebhookVerificationFailureHandler failureHandler;
 
     public WebhookVerificationInterceptor(Map<String, WebhookVerifier> verifiersByProvider,
-            WebhookVerifyProperties properties, Clock clock) {
+            WebhookVerifyProperties properties, Clock clock,
+            WebhookVerificationFailureHandler failureHandler) {
         this.verifiersByProvider = verifiersByProvider;
         this.properties = properties;
         this.clock = clock;
+        this.failureHandler = failureHandler;
     }
 
     @Override
@@ -64,7 +68,7 @@ public class WebhookVerificationInterceptor implements HandlerInterceptor {
         if (result.valid()) {
             return true;
         }
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        failureHandler.handle(request, response, providerId, result.reason());
         return false;
     }
 
