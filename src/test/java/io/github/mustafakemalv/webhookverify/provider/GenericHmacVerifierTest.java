@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.mustafakemalv.webhookverify.core.FailureReason;
 import io.github.mustafakemalv.webhookverify.core.Hmac;
+import io.github.mustafakemalv.webhookverify.core.SignatureEncoding;
 import io.github.mustafakemalv.webhookverify.core.VerificationContext;
 import io.github.mustafakemalv.webhookverify.core.VerificationResult;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -63,5 +65,17 @@ class GenericHmacVerifierTest {
 
         assertThat(result.valid()).isFalse();
         assertThat(result.reason()).isEqualTo(FailureReason.SIGNATURE_MISMATCH);
+    }
+
+    @Test
+    void accepts_a_valid_base64_signature() {
+        GenericHmacVerifier base64Verifier = new GenericHmacVerifier(HEADER, SignatureEncoding.BASE64);
+        byte[] body = "{\"event\":\"ok\"}".getBytes(StandardCharsets.UTF_8);
+        String signature = Base64.getEncoder().encodeToString(
+                Hmac.sha256(SECRET.getBytes(StandardCharsets.UTF_8), body));
+
+        VerificationResult result = base64Verifier.verify(context(body, Map.of(HEADER, signature)));
+
+        assertThat(result.valid()).isTrue();
     }
 }
