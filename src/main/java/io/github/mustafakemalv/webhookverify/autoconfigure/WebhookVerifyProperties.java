@@ -1,5 +1,6 @@
 package io.github.mustafakemalv.webhookverify.autoconfigure;
 
+import io.github.mustafakemalv.webhookverify.core.SignatureEncoding;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -27,17 +28,20 @@ public class WebhookVerifyProperties {
     /** Per-provider settings. */
     public static class Provider {
 
-        /** Which verifier to use: "stripe", "github" or "generic-hmac". */
+        /** Which verifier to use: "stripe", "github", "paddle" or "generic-hmac". */
         private String type;
 
         /** Shared signing secret for this provider. */
         private String secret;
 
-        /** Replay tolerance for time-based schemes (Stripe). Defaults to 5 minutes. */
+        /** Replay tolerance for time-based schemes (Stripe, Paddle). Defaults to 5 minutes. */
         private Duration tolerance = Duration.ofMinutes(5);
 
         /** Header carrying the signature; required only for the generic-hmac type. */
         private String signatureHeader;
+
+        /** Signature encoding for the generic-hmac type: hex (default) or base64. */
+        private SignatureEncoding encoding = SignatureEncoding.HEX;
 
         public String getType() {
             return type;
@@ -69,6 +73,14 @@ public class WebhookVerifyProperties {
 
         public void setSignatureHeader(String signatureHeader) {
             this.signatureHeader = signatureHeader;
+        }
+
+        public SignatureEncoding getEncoding() {
+            return encoding;
+        }
+
+        public void setEncoding(SignatureEncoding encoding) {
+            this.encoding = encoding;
         }
     }
 }

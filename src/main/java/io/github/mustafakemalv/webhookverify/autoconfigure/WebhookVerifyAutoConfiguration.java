@@ -3,6 +3,7 @@ package io.github.mustafakemalv.webhookverify.autoconfigure;
 import io.github.mustafakemalv.webhookverify.core.WebhookVerifier;
 import io.github.mustafakemalv.webhookverify.provider.GenericHmacVerifier;
 import io.github.mustafakemalv.webhookverify.provider.GitHubVerifier;
+import io.github.mustafakemalv.webhookverify.provider.PaddleVerifier;
 import io.github.mustafakemalv.webhookverify.provider.StripeVerifier;
 import io.github.mustafakemalv.webhookverify.web.CachedBodyFilter;
 import io.github.mustafakemalv.webhookverify.web.WebhookVerificationInterceptor;
@@ -65,7 +66,9 @@ public class WebhookVerifyAutoConfiguration {
             WebhookVerifier verifier = switch (type == null ? "" : type) {
                 case "stripe" -> new StripeVerifier();
                 case "github" -> new GitHubVerifier();
-                case "generic-hmac" -> new GenericHmacVerifier(requireSignatureHeader(id, provider));
+                case "paddle" -> new PaddleVerifier();
+                case "generic-hmac" -> new GenericHmacVerifier(
+                        requireSignatureHeader(id, provider), provider.getEncoding());
                 default -> throw new IllegalStateException(
                         "Unknown webhook-verify provider type '" + type + "' for provider '" + id + "'");
             };

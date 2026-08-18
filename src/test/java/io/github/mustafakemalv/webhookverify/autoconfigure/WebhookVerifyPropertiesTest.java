@@ -2,6 +2,7 @@ package io.github.mustafakemalv.webhookverify.autoconfigure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.mustafakemalv.webhookverify.core.SignatureEncoding;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,5 +36,26 @@ class WebhookVerifyPropertiesTest {
         assertThat(partner.getSignatureHeader()).isEqualTo("X-Partner-Signature");
         // default tolerance applied when not overridden
         assertThat(partner.getTolerance()).isEqualTo(Duration.ofMinutes(5));
+    }
+
+    @Test
+    void binds_encoding_with_hex_default() {
+        Map<String, Object> source = new HashMap<>();
+        source.put("webhook-verify.providers.shopify.type", "generic-hmac");
+        source.put("webhook-verify.providers.shopify.secret", "shpss_x");
+        source.put("webhook-verify.providers.shopify.signature-header", "X-Shopify-Hmac-Sha256");
+        source.put("webhook-verify.providers.shopify.encoding", "base64");
+        source.put("webhook-verify.providers.plain.type", "generic-hmac");
+        source.put("webhook-verify.providers.plain.secret", "s");
+        source.put("webhook-verify.providers.plain.signature-header", "X-Sig");
+
+        WebhookVerifyProperties props = new Binder(new MapConfigurationPropertySource(source))
+                .bind("webhook-verify", WebhookVerifyProperties.class)
+                .get();
+
+        assertThat(props.getProviders().get("shopify").getEncoding())
+                .isEqualTo(SignatureEncoding.BASE64);
+        assertThat(props.getProviders().get("plain").getEncoding())
+                .isEqualTo(SignatureEncoding.HEX);
     }
 }
