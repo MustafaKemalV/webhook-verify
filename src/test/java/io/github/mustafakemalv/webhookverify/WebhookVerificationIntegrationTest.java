@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -33,7 +34,13 @@ import org.springframework.web.bind.annotation.RestController;
         "webhook-verify.providers.stripe.secret=whsec_test",
         "webhook-verify.providers.partner.type=generic-hmac",
         "webhook-verify.providers.partner.secret=gen_secret",
-        "webhook-verify.providers.partner.signature-header=X-Sig"
+        "webhook-verify.providers.partner.signature-header=X-Sig",
+        "webhook-verify.providers.paddle.type=paddle",
+        "webhook-verify.providers.paddle.secret=pdl_secret",
+        "webhook-verify.providers.shopify.type=generic-hmac",
+        "webhook-verify.providers.shopify.secret=shpss_secret",
+        "webhook-verify.providers.shopify.signature-header=X-Shopify-Hmac-Sha256",
+        "webhook-verify.providers.shopify.encoding=base64"
 })
 class WebhookVerificationIntegrationTest {
 
@@ -48,12 +55,25 @@ class WebhookVerificationIntegrationTest {
         return Hmac.hex(Hmac.sha256(secret.getBytes(StandardCharsets.UTF_8), message));
     }
 
+    private static String base64(String secret, byte[] message) {
+        return Base64.getEncoder().encodeToString(
+                Hmac.sha256(secret.getBytes(StandardCharsets.UTF_8), message));
+    }
+
     private static String stripeV1(long ts, byte[] body, String secret) {
-        byte[] prefix = (ts + ".").getBytes(StandardCharsets.UTF_8);
+        return hex(secret, timestamped(ts, ".", body));
+    }
+
+    private static String paddleH1(long ts, byte[] body, String secret) {
+        return hex(secret, timestamped(ts, ":", body));
+    }
+
+    private static byte[] timestamped(long ts, String separator, byte[] body) {
+        byte[] prefix = (ts + separator).getBytes(StandardCharsets.UTF_8);
         byte[] payload = new byte[prefix.length + body.length];
         System.arraycopy(prefix, 0, payload, 0, prefix.length);
         System.arraycopy(body, 0, payload, prefix.length, body.length);
-        return hex(secret, payload);
+        return payload;
     }
 
     // --- GitHub ---
@@ -117,7 +137,34 @@ class WebhookVerificationIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- Generic ---
+    // --- Paddle ---
+
+    @Test
+    void paddle_valid_signature_within_tolerance_passes() throws Exception {
+        byte[] body = "{\"event_type\":\"transaction.completed\"}".getBytes(StandardCharsets.UTF_8);
+        String header = "ts=" + NOW_EPOCH + ";h1=" + paddleH1(NOW_EPOCH, body, "pdl_secret");
+
+        mockMvc.perform(post("/webhooks/paddle")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Paddle-Signature", header))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void paddle_expired_timestamp_is_rejected() throws Exception {
+        byte[] body = "{\"event_type\":\"x\"}".getBytes(StandardCharsets.UTF_8);
+        long tenMinutesAgo = NOW_EPOCH - 600;
+        String header = "ts=" + tenMinutesAgo + ";h1=" + paddleH1(tenMinutesAgo, body, "pdl_secret");
+
+        mockMvc.perform(post("/webhooks/paddle")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("Paddle-Signature", header))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- Generic (hex) ---
 
     @Test
     void generic_valid_signature_passes() throws Exception {
@@ -127,6 +174,19 @@ class WebhookVerificationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
                         .header("X-Sig", hex("gen_secret", body)))
+                .andExpect(status().isOk());
+    }
+
+    // --- Generic (base64, Shopify-style) ---
+
+    @Test
+    void shopify_valid_base64_signature_passes() throws Exception {
+        byte[] body = "{\"id\":123}".getBytes(StandardCharsets.UTF_8);
+
+        mockMvc.perform(post("/webhooks/shopify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .header("X-Shopify-Hmac-Sha256", base64("shpss_secret", body)))
                 .andExpect(status().isOk());
     }
 
@@ -154,9 +214,21 @@ class WebhookVerificationIntegrationTest {
                 return "ok:" + body;
             }
 
+            @PostMapping("/webhooks/paddle")
+            @VerifiedWebhook(provider = "paddle")
+            String paddle(@RequestBody String body) {
+                return "ok:" + body;
+            }
+
             @PostMapping("/webhooks/partner")
             @VerifiedWebhook(provider = "partner")
             String partner(@RequestBody String body) {
+                return "ok:" + body;
+            }
+
+            @PostMapping("/webhooks/shopify")
+            @VerifiedWebhook(provider = "shopify")
+            String shopify(@RequestBody String body) {
                 return "ok:" + body;
             }
         }
