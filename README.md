@@ -1,5 +1,7 @@
 # webhook-verify
 
+[![CI](https://github.com/MustafaKemalV/webhook-verify/actions/workflows/ci.yml/badge.svg)](https://github.com/MustafaKemalV/webhook-verify/actions/workflows/ci.yml)
+
 A Spring Boot starter that verifies inbound webhook signatures for multiple providers
 (Stripe, GitHub, Paddle, generic HMAC) **before the request body is parsed**, using a
 `@VerifiedWebhook` annotation and a raw-body-capturing servlet filter.
