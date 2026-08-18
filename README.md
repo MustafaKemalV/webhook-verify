@@ -1,15 +1,15 @@
 # webhook-verify
 
 A Spring Boot starter that verifies inbound webhook signatures for multiple providers
-(Stripe, GitHub, generic HMAC) **before the request body is parsed**, using a `@VerifiedWebhook`
-annotation and a raw-body-capturing servlet filter.
+(Stripe, GitHub, Paddle, generic HMAC) **before the request body is parsed**, using a
+`@VerifiedWebhook` annotation and a raw-body-capturing servlet filter.
 
 ## Features
 
-- One annotation, multiple providers: Stripe, GitHub, generic HMAC.
+- One annotation, multiple providers: Stripe, GitHub, Paddle, generic HMAC (hex or base64, e.g. Shopify).
 - Verifies the **raw request body** (never a re-serialized copy), the number-one webhook footgun.
 - **Constant-time** signature comparison, so timing cannot leak the secret.
-- Stripe **replay protection** via a configurable timestamp tolerance.
+- Stripe and Paddle **replay protection** via a configurable timestamp tolerance.
 - Pluggable provider SPI: add a provider without touching the core.
 - Fails closed: a missing or invalid signature is rejected with `401` before your handler runs.
 
@@ -19,7 +19,11 @@ annotation and a raw-body-capturing servlet filter.
 |----------|--------|----------------|
 | `stripe` | `Stripe-Signature` | `timestamp` + `.` + raw body (with replay window) |
 | `github` | `X-Hub-Signature-256` | raw body |
-| `generic-hmac` | configurable | raw body |
+| `paddle` | `Paddle-Signature` | `timestamp` + `:` + raw body (with replay window) |
+| `generic-hmac` | configurable | raw body (hex or base64 encoding) |
+
+Providers that sign the raw body with an HMAC and a shared secret (for example Shopify, which uses
+base64) are covered by `generic-hmac` with the right `signature-header` and `encoding`.
 
 ## Requirements
 
@@ -59,13 +63,21 @@ webhook-verify:
     github:
       type: github
       secret: ${GITHUB_WEBHOOK_SECRET}
+    paddle:
+      type: paddle
+      secret: ${PADDLE_WEBHOOK_SECRET}
+    shopify:
+      type: generic-hmac
+      secret: ${SHOPIFY_CLIENT_SECRET}
+      signature-header: X-Shopify-Hmac-Sha256
+      encoding: base64
     my-partner:
       type: generic-hmac
       secret: ${PARTNER_SECRET}
       signature-header: X-Partner-Signature
 ```
 
-The map key (`stripe`, `github`, `my-partner`) is the id you reference from the annotation.
+The map key (`stripe`, `github`, `shopify`, `my-partner`) is the id you reference from the annotation.
 
 ### 2. Annotate your webhook handler
 
@@ -88,10 +100,11 @@ A request with a missing or invalid signature is rejected with `401` before the 
 
 | Property | Description | Default |
 |----------|-------------|---------|
-| `webhook-verify.providers.<id>.type` | `stripe`, `github` or `generic-hmac` | required |
+| `webhook-verify.providers.<id>.type` | `stripe`, `github`, `paddle` or `generic-hmac` | required |
 | `webhook-verify.providers.<id>.secret` | signing secret | required |
-| `webhook-verify.providers.<id>.tolerance` | replay window (Stripe) | `5m` |
+| `webhook-verify.providers.<id>.tolerance` | replay window (Stripe, Paddle) | `5m` |
 | `webhook-verify.providers.<id>.signature-header` | signature header (generic-hmac only) | required for generic |
+| `webhook-verify.providers.<id>.encoding` | `hex` or `base64` (generic-hmac only) | `hex` |
 
 ## How it works
 
@@ -107,8 +120,8 @@ For the full design, threat model and algorithm details, see
 
 - Signatures are computed over the raw bytes, never re-serialized JSON.
 - Comparison is constant-time (`MessageDigest.isEqual`).
-- Stripe timestamps are checked against a tolerance to reject replays; only the `v1` scheme is
-  trusted and the fake `v0` test scheme is ignored.
+- Timestamped schemes (Stripe, Paddle) are checked against a tolerance to reject replays; for
+  Stripe only the `v1` scheme is trusted and the fake `v0` test scheme is ignored.
 
 ## License
 
