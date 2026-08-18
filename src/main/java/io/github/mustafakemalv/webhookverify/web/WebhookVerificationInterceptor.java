@@ -4,6 +4,7 @@ import io.github.mustafakemalv.webhookverify.autoconfigure.WebhookVerifyProperti
 import io.github.mustafakemalv.webhookverify.core.VerificationContext;
 import io.github.mustafakemalv.webhookverify.core.VerificationResult;
 import io.github.mustafakemalv.webhookverify.core.WebhookVerifier;
+import io.github.mustafakemalv.webhookverify.observability.WebhookVerificationMetrics;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -15,9 +16,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Enforces {@link VerifiedWebhook} on controller handlers: reads the annotation, looks up the
- * matching verifier and secret, verifies the raw (cached) body, and on a missing or invalid
- * signature delegates to a {@link WebhookVerificationFailureHandler} (401 by default) so the
- * handler never runs.
+ * matching verifier and secret, verifies the raw (cached) body, records the outcome via
+ * {@link WebhookVerificationMetrics}, and on a missing or invalid signature delegates to a
+ * {@link WebhookVerificationFailureHandler} (401 by default) so the handler never runs.
  */
 public class WebhookVerificationInterceptor implements HandlerInterceptor {
 
@@ -25,14 +26,17 @@ public class WebhookVerificationInterceptor implements HandlerInterceptor {
     private final WebhookVerifyProperties properties;
     private final Clock clock;
     private final WebhookVerificationFailureHandler failureHandler;
+    private final WebhookVerificationMetrics metrics;
 
     public WebhookVerificationInterceptor(Map<String, WebhookVerifier> verifiersByProvider,
             WebhookVerifyProperties properties, Clock clock,
-            WebhookVerificationFailureHandler failureHandler) {
+            WebhookVerificationFailureHandler failureHandler,
+            WebhookVerificationMetrics metrics) {
         this.verifiersByProvider = verifiersByProvider;
         this.properties = properties;
         this.clock = clock;
         this.failureHandler = failureHandler;
+        this.metrics = metrics;
     }
 
     @Override
@@ -65,6 +69,7 @@ public class WebhookVerificationInterceptor implements HandlerInterceptor {
                 config.getTolerance(), clock.instant());
 
         VerificationResult result = verifier.verify(context);
+        metrics.record(providerId, result);
         if (result.valid()) {
             return true;
         }

@@ -6,6 +6,7 @@ import io.github.mustafakemalv.webhookverify.autoconfigure.WebhookVerifyProperti
 import io.github.mustafakemalv.webhookverify.core.FailureReason;
 import io.github.mustafakemalv.webhookverify.core.Hmac;
 import io.github.mustafakemalv.webhookverify.core.WebhookVerifier;
+import io.github.mustafakemalv.webhookverify.observability.WebhookVerificationMetrics;
 import io.github.mustafakemalv.webhookverify.provider.GenericHmacVerifier;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
@@ -38,7 +39,8 @@ class WebhookVerificationInterceptorTest {
 
     private WebhookVerificationInterceptor interceptor(WebhookVerificationFailureHandler failureHandler) {
         Map<String, WebhookVerifier> verifiers = Map.of(PROVIDER, new GenericHmacVerifier(HEADER));
-        return new WebhookVerificationInterceptor(verifiers, properties(), Clock.systemUTC(), failureHandler);
+        return new WebhookVerificationInterceptor(verifiers, properties(), Clock.systemUTC(),
+                failureHandler, WebhookVerificationMetrics.NO_OP);
     }
 
     static class TestController {

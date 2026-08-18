@@ -1,1 +1,2 @@
 io.github.mustafakemalv.webhookverify.autoconfigure.WebhookVerifyAutoConfiguration
+io.github.mustafakemalv.webhookverify.autoconfigure.WebhookVerifyMetricsAutoConfiguration

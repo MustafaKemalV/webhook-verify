@@ -1,6 +1,7 @@
 package io.github.mustafakemalv.webhookverify.autoconfigure;
 
 import io.github.mustafakemalv.webhookverify.core.WebhookVerifier;
+import io.github.mustafakemalv.webhookverify.observability.WebhookVerificationMetrics;
 import io.github.mustafakemalv.webhookverify.provider.GenericHmacVerifier;
 import io.github.mustafakemalv.webhookverify.provider.GitHubVerifier;
 import io.github.mustafakemalv.webhookverify.provider.PaddleVerifier;
@@ -44,10 +45,18 @@ public class WebhookVerifyAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
+    WebhookVerificationMetrics webhookVerificationMetrics() {
+        return WebhookVerificationMetrics.NO_OP;
+    }
+
+    @Bean
     WebhookVerificationInterceptor webhookVerificationInterceptor(
             WebhookVerifyProperties properties, Clock clock,
-            WebhookVerificationFailureHandler failureHandler) {
-        return new WebhookVerificationInterceptor(buildVerifiers(properties), properties, clock, failureHandler);
+            WebhookVerificationFailureHandler failureHandler,
+            WebhookVerificationMetrics metrics) {
+        return new WebhookVerificationInterceptor(
+                buildVerifiers(properties), properties, clock, failureHandler, metrics);
     }
 
     @Bean
