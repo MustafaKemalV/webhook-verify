@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Bean;
  * Evaluated before {@link WebhookVerifyAutoConfiguration} so that its no-op metrics default only
  * applies when this Micrometer-backed bean is absent.
  */
-@AutoConfiguration(before = WebhookVerifyAutoConfiguration.class)
+@AutoConfiguration(before = {WebhookVerifyAutoConfiguration.class, WebhookVerifyReactiveAutoConfiguration.class})
 @ConditionalOnClass(MeterRegistry.class)
 public class WebhookVerifyMetricsAutoConfiguration {
 
