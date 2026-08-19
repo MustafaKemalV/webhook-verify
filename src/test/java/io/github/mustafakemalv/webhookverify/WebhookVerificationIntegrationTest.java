@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.github.mustafakemalv.webhookverify.core.Hmac;
-import io.github.mustafakemalv.webhookverify.web.VerifiedWebhook;
 import io.github.mustafakemalv.webhookverify.web.WebhookVerificationFailureHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;

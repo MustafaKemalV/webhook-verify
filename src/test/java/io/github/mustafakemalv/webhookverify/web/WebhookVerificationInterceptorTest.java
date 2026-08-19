@@ -2,6 +2,7 @@ package io.github.mustafakemalv.webhookverify.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.mustafakemalv.webhookverify.VerifiedWebhook;
 import io.github.mustafakemalv.webhookverify.autoconfigure.WebhookVerifyProperties;
 import io.github.mustafakemalv.webhookverify.core.FailureReason;
 import io.github.mustafakemalv.webhookverify.core.Hmac;

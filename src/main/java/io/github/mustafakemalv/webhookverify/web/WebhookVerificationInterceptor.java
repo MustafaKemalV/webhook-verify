@@ -1,5 +1,6 @@
 package io.github.mustafakemalv.webhookverify.web;
 
+import io.github.mustafakemalv.webhookverify.VerifiedWebhook;
 import io.github.mustafakemalv.webhookverify.autoconfigure.WebhookVerifyProperties;
 import io.github.mustafakemalv.webhookverify.core.VerificationContext;
 import io.github.mustafakemalv.webhookverify.core.VerificationResult;
