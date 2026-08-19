@@ -85,6 +85,14 @@ POST /webhooks/stripe  (raw body + signature header)
         └─ invalid ─▶ 401 Unauthorized; the controller never runs
 ```
 
+In a **WebFlux** application the same three steps run inside a single `WebFilter`: it resolves the
+handler (`RequestMappingHandlerMapping.getHandler`), captures the raw body once via
+`DataBufferUtils.join` (releasing the buffer), verifies over the raw bytes, then forwards the
+replayable exchange downstream or completes with 401. Requests without the annotation pass through
+untouched so their bodies are never buffered (streaming is preserved). The core (verifiers,
+`VerificationContext`, `Hmac`) is shared unchanged between the servlet and reactive layers, which
+is exactly why keeping it decoupled from the servlet API paid off.
+
 Two design points make this work:
 
 - **Only a filter can make the body re-readable** for the downstream controller, so raw-body

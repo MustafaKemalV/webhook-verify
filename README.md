@@ -14,6 +14,7 @@ A Spring Boot starter that verifies inbound webhook signatures for multiple prov
 - Stripe and Paddle **replay protection** via a configurable timestamp tolerance.
 - Pluggable provider SPI: add a provider without touching the core.
 - Fails closed: a missing or invalid signature is rejected with `401` before your handler runs.
+- Works with both **Spring MVC (servlet)** and **Spring WebFlux (reactive)** applications, with the same annotation and configuration.
 
 ## Supported providers
 
