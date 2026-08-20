@@ -126,6 +126,19 @@ For the full design, threat model and algorithm details, see
 - Timestamped schemes (Stripe, Paddle) are checked against a tolerance to reject replays; for
   Stripe only the `v1` scheme is trusted and the fake `v0` test scheme is ignored.
 
+## Non-goals
+
+To stay focused and provably correct, this library deliberately does not:
+
+- Authenticate/authorize users, rate limit, or protect against DDoS (these are separate layers).
+- Support Twilio-style signatures. Twilio signs the request URL plus sorted form parameters with
+  HMAC-SHA1, not the raw body; use Twilio's official SDK for that.
+- Deduplicate deliveries. A valid event may still arrive more than once; idempotency is your app's
+  concern.
+
+It does one thing: verify that an inbound webhook's raw body carries a valid provider signature,
+correctly and safely.
+
 ## License
 
 [MIT](LICENSE)
