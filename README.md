@@ -1,6 +1,7 @@
 # webhook-verify
 
 [![CI](https://github.com/MustafaKemalV/webhook-verify/actions/workflows/ci.yml/badge.svg)](https://github.com/MustafaKemalV/webhook-verify/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mustafakemalv/webhook-verify-spring-boot-starter)](https://central.sonatype.com/artifact/io.github.mustafakemalv/webhook-verify-spring-boot-starter)
 
 A Spring Boot starter that verifies inbound webhook signatures for multiple providers
 (Stripe, GitHub, Paddle, generic HMAC) **before the request body is parsed**, using a
@@ -35,22 +36,22 @@ base64) are covered by `generic-hmac` with the right `signature-header` and `enc
 
 ## Installation
 
-Not yet published to Maven Central. Build and install it into your local Maven repository:
+Available on Maven Central.
 
-```bash
-git clone https://github.com/MustafaKemalV/webhook-verify.git
-cd webhook-verify
-mvn install
-```
-
-Then add the dependency:
+Maven:
 
 ```xml
 <dependency>
     <groupId>io.github.mustafakemalv</groupId>
     <artifactId>webhook-verify-spring-boot-starter</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
+```
+
+Gradle:
+
+```groovy
+implementation 'io.github.mustafakemalv:webhook-verify-spring-boot-starter:0.1.0'
 ```
 
 ## Quick start
